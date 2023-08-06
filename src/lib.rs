@@ -1,3 +1,4 @@
+pub mod entry_points;
 pub mod globals;
 pub mod types;
 
@@ -14,6 +15,7 @@ fn collect_tokenstream<I: quote::ToTokens>(
 
 fn module_to_source(module: &naga::Module) -> Option<String> {
     // Reborrow for function scope
+    #[allow(unused_mut)]
     let mut module = &*module;
 
     #[cfg(feature = "minify")]
@@ -66,6 +68,19 @@ impl ModuleToTokens for naga::Module {
                 use super::*;
 
                 #globals
+            }
+        });
+
+        // Entry Points
+        let entry_points = collect_tokenstream(entry_points::make_entry_points(self, &mut types));
+        items.push(syn::parse_quote! {
+            #[allow(unused)]
+            #[doc = "Information about the entry points within the module, exposed as constants and functions."]
+            pub mod entry_points {
+                #[allow(unused)]
+                use super::*;
+
+                #entry_points
             }
         });
 
