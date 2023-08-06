@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use proc_macro2::TokenStream;
-use quote::TokenStreamExt;
 
 /// Returns a base Rust or `glam` type that corresponds to a TypeInner, if one exists.
 fn rust_type(type_inner: &naga::TypeInner) -> Option<syn::Type> {

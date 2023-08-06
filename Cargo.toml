@@ -2,8 +2,14 @@
 name = "naga-to-tokenstream"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "MIT"
+description = "Creates a TokenStream describing parts of a Naga module."
+homepage = "https://github.com/LucentFlux/naga-to-tokenstream"
+repository = "https://github.com/LucentFlux/naga-to-tokenstream"
+readme = "README.md"
+keywords = ["gamedev", "graphics", "wgsl", "wgpu", "shader"]
+categories = ["game-development", "graphics"]
+include = ["/Cargo.toml", "/LICENSE", "/README.md", "/src/**"]
 
 [dependencies]
 naga = { version = "0.12", features = ["wgsl-out"] }
