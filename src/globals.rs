@@ -5,7 +5,7 @@ use crate::types::TypesDefinitions;
 fn make_global_binding(
     binding: &naga::ResourceBinding,
     global: &naga::GlobalVariable,
-    module: &naga::Module,
+    _module: &naga::Module,
 ) -> Vec<syn::Item> {
     let mut binding_items = Vec::new();
 

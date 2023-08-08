@@ -252,20 +252,13 @@ impl TypesDefinitions {
     pub(crate) fn rust_type_ident(
         &mut self,
         ty_handle: naga::Handle<naga::Type>,
-        module: &naga::Module,
+        _module: &naga::Module,
     ) -> Option<syn::Type> {
         self.references.get(&ty_handle).cloned()
     }
-
-    pub(crate) fn rust_type_constructor(
-        &self,
-        components: Vec<TokenStream>,
-    ) -> Option<TokenStream> {
-        todo!()
-    }
 }
 
-pub fn make_types(module: &naga::Module, types: TypesDefinitions) -> Vec<syn::Item> {
+pub fn make_types(_module: &naga::Module, types: TypesDefinitions) -> Vec<syn::Item> {
     let mut items = Vec::new();
 
     // Add struct definitions used by other things in the module.

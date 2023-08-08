@@ -2,8 +2,8 @@ use crate::types::TypesDefinitions;
 
 fn make_constant_value(
     constant: &naga::Constant,
-    module: &naga::Module,
-    types: &mut TypesDefinitions,
+    _module: &naga::Module,
+    _types: &mut TypesDefinitions,
 ) -> Option<proc_macro2::TokenStream> {
     match &constant.inner {
         naga::ConstantInner::Scalar { width, value } => match (width, value) {
@@ -39,7 +39,7 @@ fn make_constant_value(
             }),
             _ => None,
         },
-        naga::ConstantInner::Composite { ty, components } => {
+        naga::ConstantInner::Composite { .. } => {
             /*let components: Option<Vec<_>> = components
                 .iter()
                 .map(|handle| {
@@ -101,7 +101,7 @@ pub fn make_constant(
             }),
             _ => None,
         },
-        naga::ConstantInner::Composite { ty, components } => types.rust_type_ident(*ty, module),
+        naga::ConstantInner::Composite { ty, .. } => types.rust_type_ident(*ty, module),
     };
     let value = make_constant_value(constant, module, types);
     if let (Some(ty_ident), Some(value)) = (ty_ident, value) {

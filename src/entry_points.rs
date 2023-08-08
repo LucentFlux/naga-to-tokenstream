@@ -2,8 +2,8 @@ use crate::types::TypesDefinitions;
 
 fn make_entry_point(
     entry_point: &naga::EntryPoint,
-    module: &naga::Module,
-    types: &mut TypesDefinitions,
+    _module: &naga::Module,
+    _types: &mut TypesDefinitions,
 ) -> Vec<syn::Item> {
     let mut items = Vec::new();
 
