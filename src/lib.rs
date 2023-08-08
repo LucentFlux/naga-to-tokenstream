@@ -1,3 +1,4 @@
+pub mod constants;
 pub mod entry_points;
 pub mod globals;
 pub mod types;
@@ -56,7 +57,7 @@ pub trait ModuleToTokens: sealed::SealedModule {
 impl ModuleToTokens for naga::Module {
     fn to_items(&self) -> Vec<syn::Item> {
         let mut items = Vec::new();
-        let mut types = types::TypesDefinitions::new();
+        let mut types = types::TypesDefinitions::new(&self);
 
         // Globals
         let globals = collect_tokenstream(globals::make_globals(self, &mut types));
@@ -68,6 +69,19 @@ impl ModuleToTokens for naga::Module {
                 use super::*;
 
                 #globals
+            }
+        });
+
+        // Constants
+        let constants = collect_tokenstream(constants::make_constants(self, &mut types));
+        items.push(syn::parse_quote! {
+            #[allow(unused)]
+            #[doc = "Information about the constants within the module, exposed as constants and functions."]
+            pub mod constants {
+                #[allow(unused)]
+                use super::*;
+
+                #constants
             }
         });
 

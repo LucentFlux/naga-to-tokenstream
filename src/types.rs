@@ -132,11 +132,19 @@ pub struct TypesDefinitions {
 }
 
 impl TypesDefinitions {
-    pub fn new() -> Self {
-        Self {
+    pub fn new(module: &naga::Module) -> Self {
+        let mut res = Self {
             definitions: Vec::new(),
             references: HashMap::new(),
+        };
+
+        for (ty_handle, _) in module.types.iter() {
+            if let Some(new_ty_ident) = res.try_make_type(ty_handle, module) {
+                res.references.insert(ty_handle, new_ty_ident.clone());
+            }
         }
+
+        return res;
     }
 
     fn try_make_type(
@@ -210,7 +218,7 @@ impl TypesDefinitions {
                         member_ty.map(|member_ty| {
                             quote::quote! {
                                 #attributes
-                                #member_name: #member_ty
+                                pub #member_name: #member_ty
                             }
                         })
                     })
@@ -227,6 +235,7 @@ impl TypesDefinitions {
                         }
 
                         self.definitions.push(syn::parse_quote! {
+                            #[allow(unused, non_camel_case_types)]
                             #[derive(Debug, PartialEq, Hash, Clone, #bonus_struct_derives)]
                             pub struct #name {
                                 #(#members ,)*
@@ -245,17 +254,14 @@ impl TypesDefinitions {
         ty_handle: naga::Handle<naga::Type>,
         module: &naga::Module,
     ) -> Option<syn::Type> {
-        if let Some(reference_stream) = self.references.get(&ty_handle) {
-            return Some(reference_stream.clone());
-        }
+        self.references.get(&ty_handle).cloned()
+    }
 
-        match self.try_make_type(ty_handle, module) {
-            None => None,
-            Some(ident) => {
-                self.references.insert(ty_handle, ident.clone());
-                Some(ident)
-            }
-        }
+    pub(crate) fn rust_type_constructor(
+        &self,
+        components: Vec<TokenStream>,
+    ) -> Option<TokenStream> {
+        todo!()
     }
 }
 
