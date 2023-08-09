@@ -67,24 +67,6 @@ pub mod globals {
         pub mod binding {
             pub const GROUP: u32 = 0u32;
             pub const BINDING: u32 = 0u32;
-
-            /// All the reuqired information that the shader doesn't contain when creating a bind group entry for this global.
-            pub struct BindGroupLayoutEntryDescriptor {
-                visibility: wgpu::ShaderStages,
-                has_dynamic_offset: bool,
-                min_binding_size: Option<std::num::NonZeroU64>,
-            }
-            
-            /// Creates a bind group layout entry, requiring the exta information not contained in the shader.
-            pub const fn create_bind_group_layout_entry(
-                descriptor: BindGroupLayoutEntryDescriptor,
-            ) -> wgpu::BindGroupLayoutEntry {
-                wgpu::BindGroupLayoutEntry {
-                    ..
-                }
-            }
-            /// A bind group entry with sensable defaults.
-            pub const DEFAULT_BIND_GROUP_LAYOUT_ENTRY: wgpu::BindGroupLayoutEntry = wgpu::BindGroupLayoutEntry {..};
         }
     }
 }

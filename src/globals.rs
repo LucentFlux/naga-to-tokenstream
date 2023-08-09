@@ -4,7 +4,7 @@ use crate::types::TypesDefinitions;
 
 fn make_global_binding(
     binding: &naga::ResourceBinding,
-    global: &naga::GlobalVariable,
+    _global: &naga::GlobalVariable,
     _module: &naga::Module,
 ) -> Vec<syn::Item> {
     let mut binding_items = Vec::new();
@@ -17,91 +17,6 @@ fn make_global_binding(
     binding_items.push(syn::Item::Const(syn::parse_quote! {
         pub const BINDING: u32 = #binding;
     }));
-
-    // Create constructors for binding layout entries
-    if let Some((fields, defaults, function_body)) = match &global.space {
-        naga::AddressSpace::Uniform => Some((
-            quote::quote! {
-                visibility: wgpu::ShaderStages,
-                has_dynamic_offset: bool,
-                min_binding_size: Option<std::num::NonZeroU64>,
-            },
-            quote::quote! {
-                visibility: wgpu::ShaderStages::all(),
-                has_dynamic_offset: false,
-                min_binding_size: None,
-            },
-            quote::quote! {
-                wgpu::BindGroupLayoutEntry {
-                    binding: BINDING,
-                    visibility: descriptor.visibility,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: descriptor.has_dynamic_offset,
-                        min_binding_size: descriptor.min_binding_size,
-                    },
-                    count: None,
-                }
-            },
-        )),
-        naga::AddressSpace::Storage { access } => {
-            let read_only = !access.contains(naga::StorageAccess::STORE);
-            Some((
-                quote::quote! {
-                    visibility: wgpu::ShaderStages,
-                    has_dynamic_offset: bool,
-                    min_binding_size: Option<std::num::NonZeroU64>,
-                },
-                quote::quote! {
-                    visibility: wgpu::ShaderStages::all(),
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                quote::quote! {
-                    wgpu::BindGroupLayoutEntry {
-                        binding: BINDING,
-                        visibility: descriptor.visibility,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Storage {read_only: #read_only},
-                            has_dynamic_offset: descriptor.has_dynamic_offset,
-                            min_binding_size: descriptor.min_binding_size,
-                        },
-                        count: None,
-                    }
-                },
-            ))
-        }
-
-        _ => None,
-    } {
-        binding_items.push(syn::Item::Struct(syn::parse_quote!{
-            #[doc = "All the reuqired information that the shader doesn't contain when creating a bind group entry for this global."]
-            pub struct BindGroupLayoutEntryDescriptor {
-                #fields
-            }
-        }));
-        binding_items.push(syn::Item::Impl(syn::parse_quote! {
-            impl Default for BindGroupLayoutEntryDescriptor {
-                fn default() -> Self {
-                    Self {
-                        #defaults
-                    }
-                }
-            }
-        }));
-        binding_items.push(syn::Item::Fn(syn::parse_quote! {
-            #[doc = "Creates a bind group layout entry, requiring the exta information not contained in the shader."]
-            pub const fn create_bind_group_layout_entry(descriptor: BindGroupLayoutEntryDescriptor) -> wgpu::BindGroupLayoutEntry {
-                #function_body
-            }
-        }));
-        binding_items.push(syn::Item::Const(syn::parse_quote! {
-            #[doc = "A bind group entry with sensable defaults."]
-            pub const DEFAULT_BIND_GROUP_LAYOUT_ENTRY: wgpu::BindGroupLayoutEntry = create_bind_group_layout_entry(BindGroupLayoutEntryDescriptor {
-                #defaults
-            });
-        }));
-    }
 
     return binding_items;
 }
