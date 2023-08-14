@@ -12,6 +12,15 @@ fn make_entry_point(
         pub const NAME: &'static str = #name;
     }));
 
+    let x = entry_point.workgroup_size[0];
+    let y = entry_point.workgroup_size[1];
+    let z = entry_point.workgroup_size[2];
+    if x != 0 && y != 0 && z != 0 {
+        items.push(syn::Item::Const(syn::parse_quote! {
+            pub const WORKGROUP_SIZE: [u32; 3] = [#x, #y, #z];
+        }));
+    }
+
     return items;
 }
 
