@@ -236,7 +236,7 @@ impl TypesDefinitions {
 
                         self.definitions.push(syn::parse_quote! {
                             #[allow(unused, non_camel_case_types)]
-                            #[derive(Debug, PartialEq, Hash, Clone, #bonus_struct_derives)]
+                            #[derive(Debug, PartialEq, Clone, #bonus_struct_derives)]
                             pub struct #name {
                                 #(#members ,)*
                             }
