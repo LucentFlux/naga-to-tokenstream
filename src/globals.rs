@@ -93,7 +93,11 @@ pub fn make_globals(module: &naga::Module, types: &mut TypesDefinitions) -> Vec<
             Some(name) => name.clone(),
             None => continue,
         };
-        let global_name_ident = quote::format_ident!("{}", global_name);
+        let global_name_ident = syn::parse_str::<syn::Ident>(&global_name);
+        let global_name_ident = match global_name_ident {
+            Ok(global_name_ident) => global_name_ident,
+            Err(_) => continue,
+        };
 
         // Make items within module
         let global_items = crate::collect_tokenstream(make_global(global, module, types));

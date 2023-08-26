@@ -122,7 +122,11 @@ pub fn make_constants(module: &naga::Module, types: &mut TypesDefinitions) -> Ve
             Some(name) => name.clone(),
             None => continue,
         };
-        let constant_name_ident = quote::format_ident!("{}", constant_name);
+        let constant_name_ident = syn::parse_str::<syn::Ident>(&constant_name);
+        let constant_name_ident = match constant_name_ident {
+            Ok(constant_name_ident) => constant_name_ident,
+            Err(_) => continue,
+        };
 
         // Make items within module
         let constant_items = crate::collect_tokenstream(make_constant(constant, module, types));

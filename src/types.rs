@@ -190,9 +190,9 @@ impl TypesDefinitions {
                         let member_name = if members_have_names {
                             let member_name =
                                 member.name.as_ref().expect("all members had names").clone();
-                            quote::format_ident!("{}", member_name)
+                            syn::parse_str::<syn::Ident>(&member_name)
                         } else {
-                            quote::format_ident!("v{}", i_member)
+                            syn::parse_str::<syn::Ident>(&format!("v{}", i_member))
                         };
                         let member_ty = self.rust_type_ident(member.ty, module);
 
@@ -215,18 +215,22 @@ impl TypesDefinitions {
                             }
                         }
 
-                        member_ty.map(|member_ty| {
-                            quote::quote! {
-                                #attributes
-                                pub #member_name: #member_ty
-                            }
+                        member_ty.and_then(|member_ty| {
+                            member_name.ok().map(|member_name| {
+                                quote::quote! {
+                                    #attributes
+                                    pub #member_name: #member_ty
+                                }
+                            })
                         })
                     })
                     .collect();
-                members.and_then(|members| {
-                    ty.name.as_ref().map(|name| {
-                        let name = quote::format_ident!("{}", name);
-
+                let struct_name = ty
+                    .name
+                    .as_ref()
+                    .and_then(|name| syn::parse_str::<syn::Ident>(name).ok());
+                match (members, struct_name) {
+                    (Some(members), Some(struct_name)) => {
                         #[allow(unused_mut)]
                         let mut bonus_struct_derives = TokenStream::new();
                         #[cfg(feature = "encase")]
@@ -237,13 +241,14 @@ impl TypesDefinitions {
                         self.definitions.push(syn::parse_quote! {
                             #[allow(unused, non_camel_case_types)]
                             #[derive(Debug, PartialEq, Clone, #bonus_struct_derives)]
-                            pub struct #name {
+                            pub struct #struct_name {
                                 #(#members ,)*
                             }
                         });
-                        syn::parse_quote!(#name)
-                    })
-                })
+                        Some(syn::parse_quote!(#struct_name))
+                    }
+                    _ => None,
+                }
             }
             _ => None,
         }

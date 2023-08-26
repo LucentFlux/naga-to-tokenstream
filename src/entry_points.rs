@@ -31,9 +31,14 @@ pub fn make_entry_points(module: &naga::Module, types: &mut TypesDefinitions) ->
         let entry_point_items =
             crate::collect_tokenstream(make_entry_point(entry_point, module, types));
 
-        let name = quote::format_ident!("{}", entry_point.name);
+        let entry_point_name_ident = syn::parse_str::<syn::Ident>(&entry_point.name);
+        let entry_point_name_ident = match entry_point_name_ident {
+            Ok(entry_point_name_ident) => entry_point_name_ident,
+            Err(_) => continue,
+        };
+
         items.push(syn::Item::Mod(syn::parse_quote! {
-            pub mod #name {
+            pub mod #entry_point_name_ident {
                 #entry_point_items
             }
         }))
