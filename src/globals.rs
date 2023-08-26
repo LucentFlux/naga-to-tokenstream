@@ -39,6 +39,8 @@ fn address_space_to_tokens(address_space: naga::AddressSpace) -> proc_macro2::To
     }
 }
 
+/// Converts a global in a module into a collection of Rust definitions including the type and binding of the global,
+/// if representable.
 pub fn make_global(
     global: &naga::GlobalVariable,
     module: &naga::Module,
@@ -83,6 +85,8 @@ pub fn make_global(
     return global_items;
 }
 
+/// Builds a collection of globals into a collection of Rust module definitions containing
+/// each of the globals' properties, such as type and binding.
 pub fn make_globals(module: &naga::Module, types: &mut TypesDefinitions) -> Vec<syn::Item> {
     let mut globals = Vec::new();
 

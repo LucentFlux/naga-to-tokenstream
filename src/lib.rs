@@ -1,6 +1,15 @@
+#![deny(missing_docs)]
+#![doc = include_str!("../README.md")]
+
+use std::collections::HashSet;
+
+/// Methods for converting sets of `naga::Constant`s to token streams.
 pub mod constants;
+/// Methods for converting sets of `naga::EntryPoint`s to token streams.
 pub mod entry_points;
+/// Methods for converting sets of `naga::GlobalVariable`s to token streams.
 pub mod globals;
+/// Methods for converting sets of `naga::Type`s to token streams.
 pub mod types;
 
 fn collect_tokenstream<I: quote::ToTokens>(
@@ -43,21 +52,50 @@ fn module_to_source(module: &naga::Module) -> Option<String> {
     return Some(src);
 }
 
+/// The configuration required to create a token stream describing a module.
+pub struct ModuleToTokensConfig {
+    /// A filter on the structs to expose. This is useful specifically when using the `encase` feature,
+    /// since many structs can't be encoded or decoded. It is therefore the using crate's responsibility
+    /// to expose this in some way, for example by having structs that should be exported to Rust require
+    /// an attribute.
+    pub structs_filter: Option<HashSet<String>>,
+}
+
+impl Default for ModuleToTokensConfig {
+    fn default() -> Self {
+        Self {
+            structs_filter: None,
+        }
+    }
+}
+
 mod sealed {
     pub trait SealedModule {}
     impl SealedModule for naga::Module {}
 }
 
+/// An extension trait for `naga::Module` which exposes the functionality of this crate.
+///
+/// # Usage
+///
+/// ```
+/// use naga_to_tokenstream::{ModuleToTokens, ModuleToTokensConfig};
+///
+/// let my_module = naga::Module::default();
+/// let token_representation = my_module.to_tokens(ModuleToTokensConfig::default());
+/// ```
 pub trait ModuleToTokens: sealed::SealedModule {
-    fn to_items(&self) -> Vec<syn::Item>;
-    fn to_tokens(&self) -> proc_macro2::TokenStream {
-        collect_tokenstream(self.to_items())
+    /// Converts a module to a set of `syn` module items, representing the module.
+    fn to_items(&self, cfg: ModuleToTokensConfig) -> Vec<syn::Item>;
+    /// Convenience method which calls `to_items` and then flattens the items to a single tokenstream.
+    fn to_tokens(&self, cfg: ModuleToTokensConfig) -> proc_macro2::TokenStream {
+        collect_tokenstream(self.to_items(cfg))
     }
 }
 impl ModuleToTokens for naga::Module {
-    fn to_items(&self) -> Vec<syn::Item> {
+    fn to_items(&self, cfg: ModuleToTokensConfig) -> Vec<syn::Item> {
         let mut items = Vec::new();
-        let mut types = types::TypesDefinitions::new(&self);
+        let mut types = types::TypesDefinitions::new(&self, cfg.structs_filter);
 
         // Globals
         let globals = collect_tokenstream(globals::make_globals(self, &mut types));
@@ -99,7 +137,7 @@ impl ModuleToTokens for naga::Module {
         });
 
         // Types
-        let types = collect_tokenstream(types::make_types(self, types));
+        let types = collect_tokenstream(types.definitions());
         items.push(syn::parse_quote! {
             #[allow(unused)]
             #[doc = "Equivalent Rust definitions of the types defined in this module."]

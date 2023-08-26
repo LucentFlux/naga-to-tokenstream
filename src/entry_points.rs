@@ -1,6 +1,8 @@
 use crate::types::TypesDefinitions;
 
-fn make_entry_point(
+/// Converts an entry point in a module into a collection of Rust definitions including the name and workgroup size
+/// of the entry point, if representable.
+pub fn make_entry_point(
     entry_point: &naga::EntryPoint,
     _module: &naga::Module,
     _types: &mut TypesDefinitions,
@@ -24,6 +26,8 @@ fn make_entry_point(
     return items;
 }
 
+/// Builds a collection of entry points into a collection of Rust module definitions containing
+/// each of the entry points' properties, such as name and workgroup size.
 pub fn make_entry_points(module: &naga::Module, types: &mut TypesDefinitions) -> Vec<syn::Item> {
     let mut items = Vec::new();
 

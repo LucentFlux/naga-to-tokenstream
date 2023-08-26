@@ -1,6 +1,6 @@
 [package]
 name = "naga-to-tokenstream"
-version = "0.1.3"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
 description = "Creates a TokenStream describing parts of a Naga module."

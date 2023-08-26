@@ -57,6 +57,8 @@ fn make_constant_value(
     }
 }
 
+/// Converts a constant in a module into a collection of Rust definitions including the type and value of the constant,
+/// if representable.
 pub fn make_constant(
     constant: &naga::Constant,
     module: &naga::Module,
@@ -113,6 +115,8 @@ pub fn make_constant(
     items
 }
 
+/// Builds a collection of constants into a collection of Rust module definitions containing
+/// each of the constants properties, such as type and value.
 pub fn make_constants(module: &naga::Module, types: &mut TypesDefinitions) -> Vec<syn::Item> {
     let mut constants = Vec::new();
 
