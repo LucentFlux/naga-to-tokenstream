@@ -170,17 +170,8 @@ impl TypesDefinitions {
                 let base_type = self.rust_type_ident(*base, module)?;
                 match size {
                     naga::ArraySize::Constant(size) => {
-                        let size = module.constants.try_get(*size).ok()?;
-                        let size = match size.inner {
-                            naga::ConstantInner::Scalar { value, .. } => match value {
-                                naga::ScalarValue::Sint(v) => usize::try_from(v).ok(),
-                                naga::ScalarValue::Uint(v) => usize::try_from(v).ok(),
-                                _ => None,
-                            },
-                            _ => None,
-                        };
-                        let size = size?;
-                        Some(syn::parse_quote!([#base_type; #size]))
+                        let size = size.get();
+                        Some(syn::parse_quote!([#base_type; #size as usize]))
                     }
                     naga::ArraySize::Dynamic => Some(syn::parse_quote!(Vec<#base_type>)),
                 }
