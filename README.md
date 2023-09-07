@@ -33,7 +33,7 @@ fn main() {
 
 Then this crate would generate something like the following:
 
-```rust
+```rust ignore
 /// Equivalent Rust definitions of the constants defined in this module
 pub mod constants {
     pub mod ELEMENTS_LENGTH {
