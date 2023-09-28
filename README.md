@@ -1,6 +1,6 @@
 # Naga to TokenStream
-![crates.io](https://img.shields.io/crates/v/naga-to-tokenstream.svg)
-![crates.io](https://img.shields.io/crates/l/naga-to-tokenstream.svg)
+[![crates.io](https://img.shields.io/crates/v/naga-to-tokenstream.svg)](https://crates.io/crates/naga-to-tokenstream)
+[![crates.io](https://img.shields.io/crates/l/naga-to-tokenstream.svg)](https://github.com/LucentFlux/naga-to-tokenstream/blob/main/LICENSE)
 
 This library takes a Naga module and produces a `proc_macro::TokenStream` giving information about the module. It is intended for use in other libraries which process a shader at compile time, for example in a proc macro or build script, to expose a large collection of useful information to the Rust compiler (and hence programmer) about items in the module.
 
