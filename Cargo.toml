@@ -12,7 +12,7 @@ categories = ["game-development", "graphics"]
 include = ["/Cargo.toml", "/LICENSE", "/README.md", "/src/**"]
 
 [dependencies]
-naga = { version = "0.13", features = ["wgsl-out"] }
+naga = { version = "0.14", features = ["wgsl-out"] }
 wgsl-minifier = { version = "0.1", optional = true}
 
 quote = "1.0"
