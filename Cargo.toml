@@ -1,6 +1,6 @@
 [package]
 name = "naga-to-tokenstream"
-version = "0.4.1"
+version = "0.4.2"
 edition = "2021"
 license = "MIT"
 description = "Creates a TokenStream describing parts of a Naga module."
@@ -12,8 +12,8 @@ categories = ["game-development", "graphics"]
 include = ["/Cargo.toml", "/LICENSE", "/README.md", "/src/**"]
 
 [dependencies]
-naga = { version = "0.14", features = ["wgsl-out"] }
-wgsl-minifier = { version = "0.2", optional = true}
+naga = { version = "0.14", features = ["clone", "wgsl-out"] }
+wgsl-minifier = { version = "0.3", optional = true}
 
 quote = "1.0"
 proc-macro2 = "1.0"

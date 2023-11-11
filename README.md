@@ -75,8 +75,13 @@ pub mod globals {
 pub mod entry_points {
     pub mod main {
         pub const NAME: &'static str = "main";
+
+        /// The sourcecode for the shader, as a constant string, excluding any other entry points. 
+        /// This is useful when the `minify` feature is enabled for this crate, as it allows more aggressive 
+        /// minification to be performed with the knowledge of the specific entry point that will be used.
+        pub const EXCLUSIVE_SOURCE: &'static str = "...";
     }
 }
-/// The sourcecode for the shader, as a constant string
+/// The sourcecode for the shader, as a constant string.
 pub const SOURCE: &'static str = "...";
 ```

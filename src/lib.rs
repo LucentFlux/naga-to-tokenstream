@@ -23,31 +23,38 @@ fn collect_tokenstream<I: quote::ToTokens>(
     tokens
 }
 
-fn module_to_source(module: &naga::Module) -> Option<String> {
-    // Reborrow for function scope
+fn module_to_source(module: &naga::Module, retain_entry_point: Option<String>) -> Option<String> {
+    // Clone since we sometimes modify things
     #[allow(unused_mut)]
-    let mut module = &*module;
+    let mut module = module.clone();
 
-    #[cfg(feature = "minify")]
-    let mut minified;
+    // We allow only a single entry point, for specialised source strings per entry point.
+    if let Some(retain_entry_point) = retain_entry_point {
+        entry_points::filter_entry_points(&mut module, retain_entry_point);
+    }
+
+    // If we minify, do the first pass before writing out
     #[cfg(feature = "minify")]
     {
-        minified = module.clone();
-        wgsl_minifier::remove_identifiers(&mut minified);
-        module = &minified;
+        wgsl_minifier::minify_module(&mut module);
     }
+
+    // Mini validation to get module info
     let info = naga::valid::Validator::new(
         naga::valid::ValidationFlags::empty(),
-        naga::valid::Capabilities::empty(),
+        naga::valid::Capabilities::all(),
     )
-    .validate(module);
+    .validate(&module);
 
+    // Write to wgsl
     let info = info.ok()?;
-    let src = naga::back::wgsl::write_string(module, &info, naga::back::wgsl::WriterFlags::empty())
-        .ok()?;
+    let src =
+        naga::back::wgsl::write_string(&module, &info, naga::back::wgsl::WriterFlags::empty())
+            .ok()?;
 
+    // Remove whitespace if minifying
     #[cfg(feature = "minify")]
-    let src = wgsl_minifier::minify_wgsl_source_whitespace(&src);
+    let src = wgsl_minifier::minify_wgsl_source(&src);
 
     return Some(src);
 }
@@ -152,8 +159,7 @@ impl ModuleToTokens for naga::Module {
         });
 
         // Source string
-        // This must be done last since we want to minify only after everything else has been generated about the shader.
-        if let Some(src) = module_to_source(self) {
+        if let Some(src) = module_to_source(self, None) {
             items.push(syn::parse_quote! {
                 #[doc = "The sourcecode for the shader, as a constant string."]
                 pub const SOURCE: &'static str = #src;

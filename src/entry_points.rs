@@ -4,16 +4,18 @@ use crate::types::TypesDefinitions;
 /// of the entry point, if representable.
 pub fn make_entry_point(
     entry_point: &naga::EntryPoint,
-    _module: &naga::Module,
+    module: &naga::Module,
     _types: &mut TypesDefinitions,
 ) -> Vec<syn::Item> {
     let mut items = Vec::new();
 
+    // Entry point name
     let name = &entry_point.name;
     items.push(syn::Item::Const(syn::parse_quote! {
         pub const NAME: &'static str = #name;
     }));
 
+    // Workgroup size
     let x = entry_point.workgroup_size[0];
     let y = entry_point.workgroup_size[1];
     let z = entry_point.workgroup_size[2];
@@ -21,6 +23,14 @@ pub fn make_entry_point(
         items.push(syn::Item::Const(syn::parse_quote! {
             pub const WORKGROUP_SIZE: [u32; 3] = [#x, #y, #z];
         }));
+    }
+
+    // The module sourcecode, excluding all other entry points. Useful for more aggressive minification
+    if let Some(src) = crate::module_to_source(&module, Some(entry_point.name.clone())) {
+        items.push(syn::parse_quote! {
+            #[doc = "The sourcecode for the shader, as a constant string, excluding any other entry points. This is useful when the `minify` feature is enabled for this crate, as it allows more aggressive minification to be performed with the knowledge of the specific entry point that will be used."]
+            pub const EXCLUSIVE_SOURCE: &'static str = #src;
+        });
     }
 
     return items;
@@ -49,4 +59,18 @@ pub fn make_entry_points(module: &naga::Module, types: &mut TypesDefinitions) ->
     }
 
     return items;
+}
+
+/// Removes entry points which don't have the name given
+pub(crate) fn filter_entry_points(module: &mut naga::Module, retain_entry_point: String) {
+    let old_entry_points = std::mem::take(&mut module.entry_points);
+    let filtered_entry_point = old_entry_points
+        .into_iter()
+        .filter(|ep| ep.name == retain_entry_point)
+        .next();
+
+    module.entry_points = match filtered_entry_point {
+        Some(filtered_entry_point) => vec![filtered_entry_point],
+        None => vec![],
+    };
 }
