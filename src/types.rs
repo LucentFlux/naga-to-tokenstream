@@ -5,7 +5,7 @@ use proc_macro2::TokenStream;
 /// Returns a base Rust or `glam` type that corresponds to a TypeInner, if one exists.
 fn rust_type(type_inner: &naga::TypeInner) -> Option<syn::Type> {
     match type_inner {
-        naga::TypeInner::Scalar { kind, width } => match (kind, width) {
+        naga::TypeInner::Scalar(naga::Scalar { kind, width }) => match (kind, width) {
             (naga::ScalarKind::Bool, 1) => Some(syn::parse_quote!(bool)),
             (naga::ScalarKind::Float, 4) => Some(syn::parse_quote!(f32)),
             (naga::ScalarKind::Float, 8) => Some(syn::parse_quote!(f64)),
@@ -15,7 +15,10 @@ fn rust_type(type_inner: &naga::TypeInner) -> Option<syn::Type> {
             (naga::ScalarKind::Uint, 8) => Some(syn::parse_quote!(u64)),
             _ => None,
         },
-        naga::TypeInner::Vector { size, kind, width } => {
+        naga::TypeInner::Vector {
+            size,
+            scalar: naga::Scalar { kind, width },
+        } => {
             if cfg!(feature = "glam") {
                 match (size, kind, width) {
                     (naga::VectorSize::Bi, naga::ScalarKind::Bool, 1) => {
@@ -90,38 +93,29 @@ fn rust_type(type_inner: &naga::TypeInner) -> Option<syn::Type> {
         naga::TypeInner::Matrix {
             columns,
             rows,
-            width,
+            scalar: naga::Scalar { kind, width },
         } => {
-            if cfg!(feature = "glam") {
-                match (columns, rows, width) {
-                    (naga::VectorSize::Bi, naga::VectorSize::Bi, 4) => {
-                        Some(syn::parse_quote!(glam::f32::Mat2))
-                    }
-                    (naga::VectorSize::Tri, naga::VectorSize::Tri, 4) => {
-                        Some(syn::parse_quote!(glam::f32::Mat3))
-                    }
-                    (naga::VectorSize::Quad, naga::VectorSize::Quad, 4) => {
-                        Some(syn::parse_quote!(glam::f32::Mat4))
-                    }
-                    (naga::VectorSize::Bi, naga::VectorSize::Bi, 8) => {
-                        Some(syn::parse_quote!(glam::f64::DMat2))
-                    }
-                    (naga::VectorSize::Tri, naga::VectorSize::Tri, 8) => {
-                        Some(syn::parse_quote!(glam::f64::DMat3))
-                    }
-                    (naga::VectorSize::Quad, naga::VectorSize::Quad, 8) => {
-                        Some(syn::parse_quote!(glam::f64::DMat4))
-                    }
-                    _ => None,
-                }
-            } else {
-                None
+            if !(cfg!(feature = "glam")) {
+                return None;
+            }
+            if columns != rows {
+                return None;
+            }
+            match (kind, width) {
+                (naga::ScalarKind::Float, 4) => match columns {
+                    naga::VectorSize::Bi => Some(syn::parse_quote!(glam::f32::Mat2)),
+                    naga::VectorSize::Tri => Some(syn::parse_quote!(glam::f32::Mat3)),
+                    naga::VectorSize::Quad => Some(syn::parse_quote!(glam::f32::Mat4)),
+                },
+                (naga::ScalarKind::Float, 8) => match columns {
+                    naga::VectorSize::Bi => Some(syn::parse_quote!(glam::f64::Mat2)),
+                    naga::VectorSize::Tri => Some(syn::parse_quote!(glam::f64::Mat3)),
+                    naga::VectorSize::Quad => Some(syn::parse_quote!(glam::f64::Mat4)),
+                },
+                _ => None,
             }
         }
-        naga::TypeInner::Atomic { kind, width } => rust_type(&naga::TypeInner::Scalar {
-            kind: *kind,
-            width: *width,
-        }),
+        naga::TypeInner::Atomic(scalar) => rust_type(&naga::TypeInner::Scalar(*scalar)),
         _ => None,
     }
 }

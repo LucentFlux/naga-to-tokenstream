@@ -24,6 +24,15 @@ fn make_constant_value(
             naga::Literal::Bool(v) => quote::quote! {
                 #v
             },
+            naga::Literal::I64(v) => quote::quote! {
+                #v
+            },
+            naga::Literal::AbstractInt(v) => quote::quote! {
+                #v
+            },
+            naga::Literal::AbstractFloat(v) => quote::quote! {
+                #v
+            },
         }),
         naga::Expression::ZeroValue(_) => Some(quote::quote! {
             Default::default();
