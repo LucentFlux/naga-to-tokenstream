@@ -26,14 +26,14 @@ pub fn make_entry_point(
     }
 
     // The module sourcecode, excluding all other entry points. Useful for more aggressive minification
-    if let Some(src) = crate::module_to_source(&module, Some(entry_point.name.clone())) {
+    if let Some(src) = crate::module_to_source(module, Some(entry_point.name.clone())) {
         items.push(syn::parse_quote! {
             #[doc = "The sourcecode for the shader, as a constant string, excluding any other entry points. This is useful when the `minify` feature is enabled for this crate, as it allows more aggressive minification to be performed with the knowledge of the specific entry point that will be used."]
             pub const EXCLUSIVE_SOURCE: &'static str = #src;
         });
     }
 
-    return items;
+    items
 }
 
 /// Builds a collection of entry points into a collection of Rust module definitions containing
@@ -58,7 +58,7 @@ pub fn make_entry_points(module: &naga::Module, types: &mut TypesDefinitions) ->
         }))
     }
 
-    return items;
+    items
 }
 
 /// Removes entry points which don't have the name given
@@ -66,8 +66,7 @@ pub(crate) fn filter_entry_points(module: &mut naga::Module, retain_entry_point:
     let old_entry_points = std::mem::take(&mut module.entry_points);
     let filtered_entry_point = old_entry_points
         .into_iter()
-        .filter(|ep| ep.name == retain_entry_point)
-        .next();
+        .find(|ep| ep.name == retain_entry_point);
 
     module.entry_points = match filtered_entry_point {
         Some(filtered_entry_point) => vec![filtered_entry_point],

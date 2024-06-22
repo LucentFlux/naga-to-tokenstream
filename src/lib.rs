@@ -56,24 +56,23 @@ fn module_to_source(module: &naga::Module, retain_entry_point: Option<String>) -
     #[cfg(feature = "minify")]
     let src = wgsl_minifier::minify_wgsl_source(&src);
 
-    return Some(src);
+    Some(src)
 }
 
 /// The configuration required to create a token stream describing a module.
+#[derive(Default)]
 pub struct ModuleToTokensConfig {
     /// A filter on the structs to expose. This is useful specifically when using the `encase` feature,
     /// since many structs can't be encoded or decoded. It is therefore the using crate's responsibility
     /// to expose this in some way, for example by having structs that should be exported to Rust require
     /// an attribute.
     pub structs_filter: Option<HashSet<String>>,
-}
-
-impl Default for ModuleToTokensConfig {
-    fn default() -> Self {
-        Self {
-            structs_filter: None,
-        }
-    }
+    /// Generate `glam` types.
+    pub gen_glam: bool,
+    /// Generate `encase` types.
+    pub gen_encase: bool,
+    /// Generate `naga` types.
+    pub gen_naga: bool,
 }
 
 mod sealed {
@@ -102,10 +101,10 @@ pub trait ModuleToTokens: sealed::SealedModule {
 impl ModuleToTokens for naga::Module {
     fn to_items(&self, cfg: ModuleToTokensConfig) -> Vec<syn::Item> {
         let mut items = Vec::new();
-        let mut types = types::TypesDefinitions::new(&self, cfg.structs_filter);
+        let mut types = types::TypesDefinitions::new(self, cfg.structs_filter.clone(), &cfg);
 
         // Globals
-        let globals = collect_tokenstream(globals::make_globals(self, &mut types));
+        let globals = collect_tokenstream(globals::make_globals(self, &mut types, &cfg));
         items.push(syn::parse_quote! {
             #[allow(unused)]
             #[doc = "Information about the globals within the module, exposed as constants and functions."]
@@ -118,7 +117,7 @@ impl ModuleToTokens for naga::Module {
         });
 
         // Constants
-        let constants = collect_tokenstream(constants::make_constants(self, &mut types));
+        let constants = collect_tokenstream(constants::make_constants(self, &mut types, &cfg));
         items.push(syn::parse_quote! {
             #[allow(unused)]
             #[doc = "Information about the constants within the module, exposed as constants and functions."]

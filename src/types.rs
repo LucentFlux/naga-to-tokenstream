@@ -2,8 +2,10 @@ use std::collections::{HashMap, HashSet};
 
 use proc_macro2::TokenStream;
 
+use crate::ModuleToTokensConfig;
+
 /// Returns a base Rust or `glam` type that corresponds to a TypeInner, if one exists.
-fn rust_type(type_inner: &naga::TypeInner) -> Option<syn::Type> {
+fn rust_type(type_inner: &naga::TypeInner, args: &ModuleToTokensConfig) -> Option<syn::Type> {
     match type_inner {
         naga::TypeInner::Scalar(naga::Scalar { kind, width }) => match (kind, width) {
             (naga::ScalarKind::Bool, 1) => Some(syn::parse_quote!(bool)),
@@ -19,7 +21,7 @@ fn rust_type(type_inner: &naga::TypeInner) -> Option<syn::Type> {
             size,
             scalar: naga::Scalar { kind, width },
         } => {
-            if cfg!(feature = "glam") {
+            if args.gen_glam {
                 match (size, kind, width) {
                     (naga::VectorSize::Bi, naga::ScalarKind::Bool, 1) => {
                         Some(syn::parse_quote!(glam::bool::BVec2))
@@ -95,7 +97,7 @@ fn rust_type(type_inner: &naga::TypeInner) -> Option<syn::Type> {
             rows,
             scalar: naga::Scalar { kind, width },
         } => {
-            if !(cfg!(feature = "glam")) {
+            if args.gen_glam {
                 return None;
             }
             if columns != rows {
@@ -115,7 +117,7 @@ fn rust_type(type_inner: &naga::TypeInner) -> Option<syn::Type> {
                 _ => None,
             }
         }
-        naga::TypeInner::Atomic(scalar) => rust_type(&naga::TypeInner::Scalar(*scalar)),
+        naga::TypeInner::Atomic(scalar) => rust_type(&naga::TypeInner::Scalar(*scalar), args),
         _ => None,
     }
 }
@@ -129,7 +131,11 @@ pub struct TypesDefinitions {
 
 impl TypesDefinitions {
     /// Constructs a new type definition collator, with a given filter for type names.
-    pub fn new(module: &naga::Module, structs_filter: Option<HashSet<String>>) -> Self {
+    pub fn new(
+        module: &naga::Module,
+        structs_filter: Option<HashSet<String>>,
+        args: &ModuleToTokensConfig,
+    ) -> Self {
         let mut res = Self {
             definitions: Vec::new(),
             references: HashMap::new(),
@@ -137,31 +143,32 @@ impl TypesDefinitions {
         };
 
         for (ty_handle, _) in module.types.iter() {
-            if let Some(new_ty_ident) = res.try_make_type(ty_handle, module) {
+            if let Some(new_ty_ident) = res.try_make_type(ty_handle, module, args) {
                 res.references.insert(ty_handle, new_ty_ident.clone());
             }
         }
 
-        return res;
+        res
     }
 
     fn try_make_type(
         &mut self,
         ty_handle: naga::Handle<naga::Type>,
         module: &naga::Module,
+        args: &ModuleToTokensConfig,
     ) -> Option<syn::Type> {
         let ty = match module.types.get_handle(ty_handle) {
             Err(_) => return None,
             Ok(ty) => ty,
         };
-        if let Some(ty_ident) = rust_type(&ty.inner) {
+        if let Some(ty_ident) = rust_type(&ty.inner, args) {
             return Some(ty_ident);
         };
 
         match &ty.inner {
             naga::TypeInner::Array { base, size, .. }
             | naga::TypeInner::BindingArray { base, size } => {
-                let base_type = self.rust_type_ident(*base, module)?;
+                let base_type = self.rust_type_ident(*base, module, args)?;
                 match size {
                     naga::ArraySize::Constant(size) => {
                         let size = size.get();
@@ -186,7 +193,7 @@ impl TypesDefinitions {
 
                 let members_have_names = members.iter().all(|member| member.name.is_some());
                 let members: Option<Vec<_>> = members
-                    .into_iter()
+                    .iter()
                     .enumerate()
                     .map(|(i_member, member)| {
                         let member_name = if members_have_names {
@@ -196,7 +203,7 @@ impl TypesDefinitions {
                         } else {
                             syn::parse_str::<syn::Ident>(&format!("v{}", i_member))
                         };
-                        let member_ty = self.rust_type_ident(member.ty, module);
+                        let member_ty = self.rust_type_ident(member.ty, module, args);
 
                         let mut attributes = proc_macro2::TokenStream::new();
                         // Runtime-sized fields must be marked as such when using encase
@@ -232,8 +239,7 @@ impl TypesDefinitions {
                     (Some(members), Some(struct_name)) => {
                         #[allow(unused_mut)]
                         let mut bonus_struct_derives = TokenStream::new();
-                        #[cfg(feature = "encase")]
-                        {
+                        if args.gen_encase {
                             bonus_struct_derives.extend(quote::quote!(encase::ShaderType,))
                         }
 
@@ -261,17 +267,18 @@ impl TypesDefinitions {
         &mut self,
         ty_handle: naga::Handle<naga::Type>,
         module: &naga::Module,
+        args: &ModuleToTokensConfig,
     ) -> Option<syn::Type> {
         if let Some(ident) = self.references.get(&ty_handle).cloned() {
             return Some(ident);
         }
 
-        if let Some(built) = self.try_make_type(ty_handle, module) {
+        if let Some(built) = self.try_make_type(ty_handle, module, args) {
             self.references.insert(ty_handle, built.clone());
             return Some(built);
         }
 
-        return None;
+        None
     }
 
     /// Gives the set of definitions required by the identifiers generated by this object. These should be
@@ -279,7 +286,7 @@ impl TypesDefinitions {
     pub fn definitions(self) -> Vec<syn::Item> {
         self.definitions
             .into_iter()
-            .map(|item_struct| syn::Item::Struct(item_struct))
+            .map(syn::Item::Struct)
             .collect()
     }
 }

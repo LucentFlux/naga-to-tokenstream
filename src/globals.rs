@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::types::TypesDefinitions;
+use crate::{types::TypesDefinitions, ModuleToTokensConfig};
 
 fn make_global_binding(
     binding: &naga::ResourceBinding,
@@ -18,10 +18,9 @@ fn make_global_binding(
         pub const BINDING: u32 = #binding;
     }));
 
-    return binding_items;
+    binding_items
 }
 
-#[cfg(feature = "naga")]
 fn address_space_to_tokens(address_space: naga::AddressSpace) -> proc_macro2::TokenStream {
     match address_space {
         naga::AddressSpace::Function => quote::quote!(naga::AddressSpace::Function),
@@ -45,6 +44,7 @@ pub fn make_global(
     global: &naga::GlobalVariable,
     module: &naga::Module,
     types: &mut TypesDefinitions,
+    args: &ModuleToTokensConfig,
 ) -> Vec<syn::Item> {
     let mut global_items = Vec::new();
 
@@ -54,8 +54,7 @@ pub fn make_global(
         }));
     }
 
-    #[cfg(feature = "naga")]
-    {
+    if args.gen_naga {
         let space = address_space_to_tokens(global.space);
         global_items.push(syn::Item::Const(syn::parse_quote! {
             #[allow(unused)]
@@ -63,7 +62,7 @@ pub fn make_global(
         }));
     }
 
-    if let Some(type_ident) = types.rust_type_ident(global.ty, module) {
+    if let Some(type_ident) = types.rust_type_ident(global.ty, module, args) {
         global_items.push(syn::Item::Type(syn::parse_quote! {
             pub type Ty = #type_ident;
         }));
@@ -71,7 +70,7 @@ pub fn make_global(
 
     if let Some(binding) = &global.binding {
         let binding_items = make_global_binding(binding, global, module);
-        if binding_items.len() > 0 {
+        if !binding_items.is_empty() {
             let binding_items = crate::collect_tokenstream(binding_items);
 
             global_items.push(syn::Item::Mod(syn::parse_quote! {
@@ -82,12 +81,16 @@ pub fn make_global(
         }
     }
 
-    return global_items;
+    global_items
 }
 
 /// Builds a collection of globals into a collection of Rust module definitions containing
 /// each of the globals' properties, such as type and binding.
-pub fn make_globals(module: &naga::Module, types: &mut TypesDefinitions) -> Vec<syn::Item> {
+pub fn make_globals(
+    module: &naga::Module,
+    types: &mut TypesDefinitions,
+    args: &ModuleToTokensConfig,
+) -> Vec<syn::Item> {
     let mut globals = Vec::new();
 
     // Info about each global individually
@@ -104,7 +107,7 @@ pub fn make_globals(module: &naga::Module, types: &mut TypesDefinitions) -> Vec<
         };
 
         // Make items within module
-        let global_items = crate::collect_tokenstream(make_global(global, module, types));
+        let global_items = crate::collect_tokenstream(make_global(global, module, types, args));
 
         // Collate into an inner module
         let doc = format!(
@@ -131,5 +134,5 @@ pub fn make_globals(module: &naga::Module, types: &mut TypesDefinitions) -> Vec<
     }
     //TODO: Create `create_bind_groups` ctr function
 
-    return globals;
+    globals
 }
