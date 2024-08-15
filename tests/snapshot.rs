@@ -96,6 +96,7 @@ fn readme_snapshot() {
             pub struct Bar {
                 pub size: u32,
                 pub elements: [glam::bool::BVec2; 128u32 as usize],
+                #[size(runtime)]
                 pub foos: Vec<Foo>,
             }
         }
