@@ -207,10 +207,10 @@ impl TypesDefinitions {
 
                         let mut attributes = proc_macro2::TokenStream::new();
                         // Runtime-sized fields must be marked as such when using encase
-                        if cfg!(feature = "encase") {
+                        if args.gen_encase {
                             let ty = module.types.get_handle(member.ty);
-                            if let Ok(naga::Type { inner, .. }) = ty {
-                                match inner {
+                            if let Ok(naga::Type {
+                                inner:
                                     naga::TypeInner::Array {
                                         size: naga::ArraySize::Dynamic,
                                         ..
@@ -218,9 +218,11 @@ impl TypesDefinitions {
                                     | naga::TypeInner::BindingArray {
                                         size: naga::ArraySize::Dynamic,
                                         ..
-                                    } => attributes.extend(quote::quote!(#[size(runtime)])),
-                                    _ => {}
-                                }
+                                    },
+                                ..
+                            }) = ty
+                            {
+                                attributes.extend(quote::quote!(#[size(runtime)]))
                             }
                         }
 
