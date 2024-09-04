@@ -97,7 +97,7 @@ fn rust_type(type_inner: &naga::TypeInner, args: &ModuleToTokensConfig) -> Optio
             rows,
             scalar: naga::Scalar { kind, width },
         } => {
-            if args.gen_glam {
+            if !args.gen_glam {
                 return None;
             }
             if columns != rows {
