@@ -105,9 +105,13 @@ impl ModuleToTokens for naga::Module {
 
         // Globals
         let globals = collect_tokenstream(globals::make_globals(self, &mut types, &cfg));
+        let globals: syn::File = syn::parse2(globals).unwrap();
+        let globals_str = format!("```rust\n{}\n```", prettyplease::unparse(&globals));
+        let globals_doc: proc_macro2::TokenStream = quote::quote! { #[doc = #globals_str] };
         items.push(syn::parse_quote! {
             #[allow(unused)]
             #[doc = "Information about the globals within the module, exposed as constants and functions."]
+            #globals_doc
             pub mod globals {
                 #[allow(unused)]
                 use super::*;
@@ -118,9 +122,13 @@ impl ModuleToTokens for naga::Module {
 
         // Constants
         let constants = collect_tokenstream(constants::make_constants(self, &mut types, &cfg));
+        let constants: syn::File = syn::parse2(constants).unwrap();
+        let constants_str = format!("```rust\n{}\n```", prettyplease::unparse(&constants));
+        let constants_doc: proc_macro2::TokenStream = quote::quote! { #[doc = #constants_str] };
         items.push(syn::parse_quote! {
             #[allow(unused)]
             #[doc = "Information about the constants within the module, exposed as constants and functions."]
+            #constants_doc
             pub mod constants {
                 #[allow(unused)]
                 use super::*;
@@ -131,9 +139,13 @@ impl ModuleToTokens for naga::Module {
 
         // Entry Points
         let entry_points = collect_tokenstream(entry_points::make_entry_points(self, &mut types));
+        let entry_points: syn::File = syn::parse2(entry_points).unwrap();
+        let entry_points_str = format!("```rust\n{}\n```", prettyplease::unparse(&entry_points));
+        let entry_points_doc: proc_macro2::TokenStream = quote::quote! { #[doc = #entry_points_str] };
         items.push(syn::parse_quote! {
             #[allow(unused)]
             #[doc = "Information about the entry points within the module, exposed as constants and functions."]
+            #entry_points_doc
             pub mod entry_points {
                 #[allow(unused)]
                 use super::*;
@@ -144,12 +156,16 @@ impl ModuleToTokens for naga::Module {
 
         // Types
         let types = collect_tokenstream(types.definitions());
+        let types: syn::File = syn::parse2(types).unwrap();
+        let types_str = format!("```rust\n{}\n```", prettyplease::unparse(&types));
+        let types_doc: proc_macro2::TokenStream = quote::quote! { #[doc = #types_str] };
         items.push(syn::parse_quote! {
-            #[allow(unused)]
-            #[doc = "Equivalent Rust definitions of the types defined in this module."]
-            pub mod types {
-                #types
-            }
+          #[allow(unused)]
+          #[doc = "Equivalent Rust definitions of the types defined in this module."]
+          #types_doc
+          pub mod types {
+            #types
+          }
         });
         // We use all the types from the types mod in other modules.
         items.push(syn::parse_quote! {
