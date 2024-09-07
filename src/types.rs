@@ -89,7 +89,72 @@ fn rust_type(type_inner: &naga::TypeInner, args: &ModuleToTokensConfig) -> Optio
                     _ => None,
                 }
             } else {
-                None
+                match (size, kind, width) {
+                    (naga::VectorSize::Bi, naga::ScalarKind::Bool, 1) => {
+                        Some(syn::parse_quote!([bool; 2]))
+                    }
+                    (naga::VectorSize::Tri, naga::ScalarKind::Bool, 1) => {
+                        Some(syn::parse_quote!([bool; 3]))
+                    }
+                    (naga::VectorSize::Quad, naga::ScalarKind::Bool, 1) => {
+                        Some(syn::parse_quote!([bool; 4]))
+                    }
+                    (naga::VectorSize::Bi, naga::ScalarKind::Float, 4) => {
+                        Some(syn::parse_quote!([f32; 2]))
+                    }
+                    (naga::VectorSize::Tri, naga::ScalarKind::Float, 4) => {
+                        Some(syn::parse_quote!([f32; 3]))
+                    }
+                    (naga::VectorSize::Quad, naga::ScalarKind::Float, 4) => {
+                        Some(syn::parse_quote!([f32; 4]))
+                    }
+                    (naga::VectorSize::Bi, naga::ScalarKind::Float, 8) => {
+                        Some(syn::parse_quote!([f64; 2]))
+                    }
+                    (naga::VectorSize::Tri, naga::ScalarKind::Float, 8) => {
+                        Some(syn::parse_quote!([f64; 3]))
+                    }
+                    (naga::VectorSize::Quad, naga::ScalarKind::Float, 8) => {
+                        Some(syn::parse_quote!([f64; 4]))
+                    }
+                    (naga::VectorSize::Bi, naga::ScalarKind::Sint, 4) => {
+                        Some(syn::parse_quote!([i32; 2]))
+                    }
+                    (naga::VectorSize::Tri, naga::ScalarKind::Sint, 4) => {
+                        Some(syn::parse_quote!([i32; 3]))
+                    }
+                    (naga::VectorSize::Quad, naga::ScalarKind::Sint, 4) => {
+                        Some(syn::parse_quote!([i32; 4]))
+                    }
+                    (naga::VectorSize::Bi, naga::ScalarKind::Sint, 8) => {
+                        Some(syn::parse_quote!([i64; 2]))
+                    }
+                    (naga::VectorSize::Tri, naga::ScalarKind::Sint, 8) => {
+                        Some(syn::parse_quote!([i64; 3]))
+                    }
+                    (naga::VectorSize::Quad, naga::ScalarKind::Sint, 8) => {
+                        Some(syn::parse_quote!([i64; 4]))
+                    }
+                    (naga::VectorSize::Bi, naga::ScalarKind::Uint, 4) => {
+                        Some(syn::parse_quote!([u32; 2]))
+                    }
+                    (naga::VectorSize::Tri, naga::ScalarKind::Uint, 4) => {
+                        Some(syn::parse_quote!([u32; 3]))
+                    }
+                    (naga::VectorSize::Quad, naga::ScalarKind::Uint, 4) => {
+                        Some(syn::parse_quote!([u32; 4]))
+                    }
+                    (naga::VectorSize::Bi, naga::ScalarKind::Uint, 8) => {
+                        Some(syn::parse_quote!([u64; 2]))
+                    }
+                    (naga::VectorSize::Tri, naga::ScalarKind::Uint, 8) => {
+                        Some(syn::parse_quote!([u64; 3]))
+                    }
+                    (naga::VectorSize::Quad, naga::ScalarKind::Uint, 8) => {
+                        Some(syn::parse_quote!([u64; 4]))
+                    }
+                    _ => None,
+                }
             }
         }
         naga::TypeInner::Matrix {
