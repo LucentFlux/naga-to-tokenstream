@@ -240,6 +240,7 @@ impl TypesDefinitions {
                         Some(syn::parse_quote!([#base_type; #size as usize]))
                     }
                     naga::ArraySize::Dynamic => Some(syn::parse_quote!(Vec<#base_type>)),
+                    naga::ArraySize::Pending(_) => None,
                 }
             }
             naga::TypeInner::Struct { members, .. } => {
