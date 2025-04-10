@@ -1,4 +1,4 @@
-use crate::types::TypesDefinitions;
+use crate::{types::TypesDefinitions, ModuleToTokensConfig};
 
 /// Converts an entry point in a module into a collection of Rust definitions including the name and workgroup size
 /// of the entry point, if representable.
@@ -6,6 +6,7 @@ pub fn make_entry_point(
     entry_point: &naga::EntryPoint,
     module: &naga::Module,
     _types: &mut TypesDefinitions,
+    args: &ModuleToTokensConfig,
 ) -> Vec<syn::Item> {
     let mut items = Vec::new();
 
@@ -14,6 +15,18 @@ pub fn make_entry_point(
     items.push(syn::Item::Const(syn::parse_quote! {
         pub const NAME: &'static str = #name;
     }));
+
+    // Stage
+    if args.gen_naga {
+      let stage = match entry_point.stage {
+        naga::ShaderStage::Vertex => quote::quote! { naga::ShaderStage::Vertex },
+        naga::ShaderStage::Fragment => quote::quote! { naga::ShaderStage::Fragment },
+        naga::ShaderStage::Compute => quote::quote! { naga::ShaderStage::Compute },
+      };
+      items.push(syn::Item::Const(syn::parse_quote! {
+          pub const STAGE: naga::ShaderStage = #stage;
+      }));
+    }
 
     // Workgroup size
     let x = entry_point.workgroup_size[0];
@@ -38,12 +51,12 @@ pub fn make_entry_point(
 
 /// Builds a collection of entry points into a collection of Rust module definitions containing
 /// each of the entry points' properties, such as name and workgroup size.
-pub fn make_entry_points(module: &naga::Module, types: &mut TypesDefinitions) -> Vec<syn::Item> {
+pub fn make_entry_points(module: &naga::Module, types: &mut TypesDefinitions, args: &ModuleToTokensConfig) -> Vec<syn::Item> {
     let mut items = Vec::new();
 
     for entry_point in module.entry_points.iter() {
         let entry_point_items =
-            crate::collect_tokenstream(make_entry_point(entry_point, module, types));
+            crate::collect_tokenstream(make_entry_point(entry_point, module, types, args));
 
         let entry_point_name_ident = syn::parse_str::<syn::Ident>(&entry_point.name);
         let entry_point_name_ident = match entry_point_name_ident {

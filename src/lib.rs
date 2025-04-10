@@ -130,7 +130,7 @@ impl ModuleToTokens for naga::Module {
         });
 
         // Entry Points
-        let entry_points = collect_tokenstream(entry_points::make_entry_points(self, &mut types));
+        let entry_points = collect_tokenstream(entry_points::make_entry_points(self, &mut types, &cfg));
         items.push(syn::parse_quote! {
             #[allow(unused)]
             #[doc = "Information about the entry points within the module, exposed as constants and functions."]

@@ -21,7 +21,7 @@ fn readme_snapshot() {
     @compute
     @workgroup_size(256,1,1)
     fn main() {
-        
+
     }
     "#,
     )
@@ -78,6 +78,7 @@ fn readme_snapshot() {
             use super::*;
             pub mod main {
                 pub const NAME: &'static str = "main";
+                pub const STAGE: naga::ShaderStage = naga::ShaderStage::Compute;
                 pub const WORKGROUP_SIZE: [u32; 3] = [256u32, 1u32, 1u32];
             }
         }
