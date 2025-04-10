@@ -244,10 +244,7 @@ impl TypesDefinitions {
             }
             naga::TypeInner::Struct { members, .. } => {
                 let struct_name = ty.name.as_ref();
-                let struct_name = match struct_name {
-                    None => return None,
-                    Some(struct_name) => struct_name,
-                };
+                let struct_name = struct_name?;
 
                 // Apply filter
                 if let Some(struct_name_filter) = &self.structs_filter {
