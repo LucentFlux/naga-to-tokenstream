@@ -13,12 +13,15 @@ include = ["/Cargo.toml", "/LICENSE", "/README.md", "/src/**"]
 
 [dependencies]
 naga = { version = "24.0", features = ["wgsl-in", "wgsl-out"] }
-wgsl-minifier = { version = "0.6", optional = true}
+wgsl-minifier = { version = "0.7", optional = true}
 
 quote = "1.0"
 proc-macro2 = "1.0"
 syn = { version = "2.0", features = ["full"] }
 prettyplease = "0.2"
+
+[dev-dependencies]
+insta = "1.42"
 
 [features]
 minify = ["dep:wgsl-minifier"]
